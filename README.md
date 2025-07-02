@@ -17,6 +17,18 @@ Key Features
 
 Architecture
 
+┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
+│   Frontend      │    │   Backend API    │    │   Blockchain    │
+│   (MeshJS)      │◄──►│   (Node.js)      │◄──►│   (Cardano)     │
+└─────────────────┘    └──────────────────┘    └─────────────────┘
+         │                       │                       │
+         │                       │                       │
+         ▼                       ▼                       ▼
+┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
+│ Wallet Connect  │    │ Blockfrost API   │    │ Smart Contracts │
+│ User Interface  │    │ Data Provider    │    │ Loyalty Logic   │
+└─────────────────┘    └──────────────────┘    └─────────────────┘
+
 aviatachain-loyalty-framework/
 ├── contracts/                    # Plutus smart contracts
 │   ├── src/
