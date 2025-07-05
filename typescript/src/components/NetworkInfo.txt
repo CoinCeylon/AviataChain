@@ -1,0 +1,21 @@
+import React, { useEffect, useState } from 'react';
+import { BlockFrostAPI } from '@blockfrost/blockfrost-js';
+
+const API = new BlockFrostAPI({ projectId: 'preview9zBw0s97SbFzj154sE8RydQ5M50J9Zkp' });
+
+const NetworkInfo: React.FC = () => {
+  const [network, setNetwork] = useState<any>(null);
+
+  useEffect(() => {
+    API.network().then(setNetwork).catch(console.error);
+  }, []);
+
+  return (
+    <div>
+      <h2>Cardano Network Info</h2>
+      <pre>{JSON.stringify(network, null, 2)}</pre>
+    </div>
+  );
+};
+
+export default NetworkInfo;

@@ -1,0 +1,32 @@
+import React from "react";
+import { useCardano } from "@cardano-foundation/cardano-connect-with-wallet";
+
+const CardanoWalletConnector: React.FC = () => {
+  const {
+    isConnected,
+    connect,
+    disconnect,
+    enabledWallet,
+    stakeAddress,
+  } = useCardano();
+
+  return (
+    <div>
+      {isConnected ? (
+        <div>
+          <p>Connected: {enabledWallet}</p>
+          <p>Stake Address: {stakeAddress}</p>
+          <button onClick={disconnect}>Disconnect</button>
+        </div>
+      ) : (
+        <div>
+          <button onClick={() => connect("nami")}>Connect Nami</button>
+          <button onClick={() => connect("eternl")}>Connect Eternl</button>
+          <button onClick={() => connect("lace")}>Connect Lace</button>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default CardanoWalletConnector;

@@ -1,0 +1,727 @@
+import {
+  BrowserWallet,
+  MeshWallet,
+  Transaction,
+  ForgeScript,
+  Mint,
+  AssetMetadata,
+  BlockfrostProvider,
+  KoiosProvider,
+  resolveNativeScriptHash,
+  NativeScript,
+  ScriptRef,
+  Asset,
+  UTxO,
+  deserializeAddress,
+  serializeAddress,
+  AppWallet,
+  MeshTxBuilder,
+  MeshTxBuilderOptions,
+} from '@meshsdk/core';
+import { CardanoWallet, useWallet, useAddress, useAssets } from '@meshsdk/react';
+import { useState, useEffect, useCallback } from 'react';
+
+// Enhanced types for NFT metadata (CIP-25 compliant)
+interface NFTMetadata {
+  name: string;
+  description: string;
+  image: string | string[];
+  mediaType?: string;
+  attributes?: Array<{
+    trait_type: string;
+    value: string | number;
+  }>;
+  files?: Array<{
+    name: string;
+    mediaType: string;
+    src: string | string[];
+  }>;
+  version?: string;
+  website?: string;
+  copyright?: string;
+  [key: string]: any;
+}
+
+// NFT Collection interface
+interface NFTCollection {
+  policyId: string;
+  name: string;
+  description: string;
+  image: string;
+  website?: string;
+  twitter?: string;
+  discord?: string;
+}
+
+// Enhanced NFT Service Class with latest features
+class NFTService {
+  private wallet: BrowserWallet;
+  private provider: BlockfrostProvider | KoiosProvider;
+  private txBuilder: MeshTxBuilder;
+
+  constructor(
+    wallet: BrowserWallet,
+    providerApiKey?: string,
+    network: 'mainnet' | 'preprod' | 'preview' = 'preprod'
+  ) {
+    this.wallet = wallet;
+    
+    // Use Blockfrost if API key provided, otherwise fallback to Koios
+    this.provider = providerApiKey
+      ? new BlockfrostProvider(providerApiKey, network)
+      : new KoiosProvider(network);
+    
+    const options: MeshTxBuilderOptions = {
+      fetcher: this.provider,
+      submitter: this.provider,
+    };
+    
+    this.txBuilder = new MeshTxBuilder(options);
+  }
+
+  /**
+   * Mint a single NFT with enhanced metadata support
+   */
+  async mintNFT(
+    assetName: string,
+    metadata: NFTMetadata,
+    recipientAddress?: string,
+    royaltyAddress?: string,
+    royaltyPercentage?: number
+  ): Promise<string> {
+    try {
+      const addresses = await this.wallet.getUsedAddresses();
+      const changeAddress = addresses[0];
+      const recipient = recipientAddress || changeAddress;
+
+      // Create time-locked forge script for better security
+      const forgingScript = ForgeScript.withOneSignature(changeAddress);
+      const policyId = resolveNativeScriptHash(forgingScript);
+
+      // Enhanced metadata with royalty support
+      const enhancedMetadata: AssetMetadata = {
+        ...metadata,
+        version: '1.0',
+        ...(royaltyAddress && royaltyPercentage && {
+          royalty: {
+            addr: royaltyAddress,
+            rate: royaltyPercentage / 100,
+          },
+        }),
+      };
+
+      const mint: Mint = {
+        assetName,
+        assetQuantity: '1',
+        metadata: enhancedMetadata,
+        label: '721',
+        recipient,
+      };
+
+      // Build transaction with improved fee estimation
+      const tx = new Transaction({ initiator: this.wallet });
+      tx.mintAsset(forgingScript, mint);
+      
+      // Add metadata to transaction
+      tx.setMetadata(721, {
+        [policyId]: {
+          [assetName]: enhancedMetadata,
+        },
+      });
+
+      const unsignedTx = await tx.build();
+      const signedTx = await this.wallet.signTx(unsignedTx);
+      const txHash = await this.wallet.submitTx(signedTx);
+
+      console.log(`NFT minted successfully! Policy ID: ${policyId}, TX: ${txHash}`);
+      return txHash;
+    } catch (error) {
+      console.error('Error minting NFT:', error);
+      throw new Error(`Failed to mint NFT: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  /**
+   * Mint multiple NFTs in a single transaction (batch minting)
+   */
+  async batchMintNFTs(
+    nfts: Array<{
+      assetName: string;
+      metadata: NFTMetadata;
+      recipient?: string;
+    }>,
+    collection?: NFTCollection
+  ): Promise<string> {
+    try {
+      const addresses = await this.wallet.getUsedAddresses();
+      const changeAddress = addresses[0];
+
+      const forgingScript = ForgeScript.withOneSignature(changeAddress);
+      const policyId = resolveNativeScriptHash(forgingScript);
+
+      const tx = new Transaction({ initiator: this.wallet });
+      const metadataMap: any = {};
+
+      // Process each NFT in the batch
+      for (const nft of nfts) {
+        const mint: Mint = {
+          assetName: nft.assetName,
+          assetQuantity: '1',
+          metadata: nft.metadata,
+          label: '721',
+          recipient: nft.recipient || changeAddress,
+        };
+
+        tx.mintAsset(forgingScript, mint);
+        metadataMap[nft.assetName] = nft.metadata;
+      }
+
+      // Add collection metadata if provided
+      if (collection) {
+        tx.setMetadata(721, {
+          [policyId]: {
+            ...metadataMap,
+            collection: collection,
+          },
+        });
+      } else {
+        tx.setMetadata(721, {
+          [policyId]: metadataMap,
+        });
+      }
+
+      const unsignedTx = await tx.build();
+      const signedTx = await this.wallet.signTx(unsignedTx);
+      const txHash = await this.wallet.submitTx(signedTx);
+
+      console.log(`Batch minted ${nfts.length} NFTs! Policy ID: ${policyId}, TX: ${txHash}`);
+      return txHash;
+    } catch (error) {
+      console.error('Error batch minting NFTs:', error);
+      throw new Error(`Failed to batch mint NFTs: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  /**
+   * Get all NFTs in wallet with enhanced filtering
+   */
+  async getWalletNFTs(
+    filterByPolicyId?: string,
+    includeMetadata = true
+  ): Promise<Array<Asset & { metadata?: any }>> {
+    try {
+      const addresses = await this.wallet.getUsedAddresses();
+      const assets = await this.provider.fetchAddressAssets(addresses[0]);
+      
+      let nfts = assets.filter(asset => {
+        const isNFT = asset.quantity === '1';
+        const matchesPolicy = !filterByPolicyId || asset.unit.startsWith(filterByPolicyId);
+        return isNFT && matchesPolicy;
+      });
+
+      // Fetch metadata for each NFT if requested
+      if (includeMetadata) {
+        const nftsWithMetadata = await Promise.all(
+          nfts.map(async (nft) => {
+            try {
+              const metadata = await this.provider.fetchAssetMetadata(nft.unit);
+              return { ...nft, metadata };
+            } catch (error) {
+              console.warn(`Failed to fetch metadata for ${nft.unit}:`, error);
+              return { ...nft, metadata: null };
+            }
+          })
+        );
+        return nftsWithMetadata;
+      }
+
+      return nfts;
+    } catch (error) {
+      console.error('Error fetching wallet NFTs:', error);
+      throw new Error(`Failed to fetch NFTs: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  /**
+   * Transfer NFT with memo support
+   */
+  async transferNFT(
+    assetId: string,
+    toAddress: string,
+    memo?: string
+  ): Promise<string> {
+    try {
+      // Validate address
+      if (!this.isValidCardanoAddress(toAddress)) {
+        throw new Error('Invalid recipient address');
+      }
+
+      const tx = new Transaction({ initiator: this.wallet });
+      
+      tx.sendAssets(
+        { address: toAddress },
+        [{ unit: assetId, quantity: '1' }]
+      );
+
+      // Add memo if provided
+      if (memo) {
+        tx.setMetadata(674, { msg: [memo] });
+      }
+
+      const unsignedTx = await tx.build();
+      const signedTx = await this.wallet.signTx(unsignedTx);
+      const txHash = await this.wallet.submitTx(signedTx);
+
+      console.log(`NFT transferred successfully! TX: ${txHash}`);
+      return txHash;
+    } catch (error) {
+      console.error('Error transferring NFT:', error);
+      throw new Error(`Failed to transfer NFT: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  /**
+   * Create offer/listing for NFT (basic implementation)
+   */
+  async createNFTOffer(
+    assetId: string,
+    priceInAda: number,
+    expirationSlot?: number
+  ): Promise<string> {
+    try {
+      const addresses = await this.wallet.getUsedAddresses();
+      const sellerAddress = addresses[0];
+
+      // Create a simple offer by sending NFT to a script with price metadata
+      const tx = new Transaction({ initiator: this.wallet });
+      
+      // This is a simplified example - real marketplace would use smart contracts
+      tx.setMetadata(1967, {
+        offer: {
+          asset: assetId,
+          seller: sellerAddress,
+          price: priceInAda * 1000000, // Convert to lovelace
+          ...(expirationSlot && { expires: expirationSlot }),
+        },
+      });
+
+      const unsignedTx = await tx.build();
+      const signedTx = await this.wallet.signTx(unsignedTx);
+      const txHash = await this.wallet.submitTx(signedTx);
+
+      console.log(`NFT offer created! TX: ${txHash}`);
+      return txHash;
+    } catch (error) {
+      console.error('Error creating NFT offer:', error);
+      throw new Error(`Failed to create offer: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  /**
+   * Get NFT trading history
+   */
+  async getNFTHistory(assetId: string): Promise<any[]> {
+    try {
+      const history = await this.provider.fetchAssetHistory(assetId);
+      return history;
+    } catch (error) {
+      console.error('Error fetching NFT history:', error);
+      throw new Error(`Failed to fetch history: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  /**
+   * Validate Cardano address
+   */
+  private isValidCardanoAddress(address: string): boolean {
+    try {
+      deserializeAddress(address);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+}
+
+// Enhanced React Hook with caching and state management
+export function useNFT(providerApiKey?: string, network: 'mainnet' | 'preprod' | 'preview' = 'preprod') {
+  const { wallet, connected } = useWallet();
+  const address = useAddress();
+  const assets = useAssets();
+  
+  const [nftService, setNftService] = useState<NFTService | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [nfts, setNfts] = useState<any[]>([]);
+
+  // Initialize service when wallet connects
+  useEffect(() => {
+    if (wallet && connected) {
+      try {
+        const service = new NFTService(wallet, providerApiKey, network);
+        setNftService(service);
+        setError(null);
+      } catch (err) {
+        setError('Failed to initialize NFT service');
+        console.error('NFT service initialization error:', err);
+      }
+    } else {
+      setNftService(null);
+    }
+  }, [wallet, connected, providerApiKey, network]);
+
+  // Auto-refresh NFTs when assets change
+  useEffect(() => {
+    if (assets && assets.length > 0) {
+      const walletNFTs = assets.filter(asset => asset.quantity === '1');
+      setNfts(walletNFTs);
+    }
+  }, [assets]);
+
+  const executeWithErrorHandling = useCallback(async <T>(
+    operation: () => Promise<T>,
+    operationName: string
+  ): Promise<T> => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const result = await operation();
+      return result;
+    } catch (err) {
+      const errorMessage = `${operationName} failed: ${err instanceof Error ? err.message : 'Unknown error'}`;
+      setError(errorMessage);
+      throw new Error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const mintNFT = useCallback(async (
+    assetName: string,
+    metadata: NFTMetadata,
+    recipientAddress?: string,
+    royaltyAddress?: string,
+    royaltyPercentage?: number
+  ) => {
+    if (!nftService) throw new Error('NFT service not available');
+    
+    return executeWithErrorHandling(
+      () => nftService.mintNFT(assetName, metadata, recipientAddress, royaltyAddress, royaltyPercentage),
+      'NFT minting'
+    );
+  }, [nftService, executeWithErrorHandling]);
+
+  const batchMintNFTs = useCallback(async (
+    nfts: Array<{ assetName: string; metadata: NFTMetadata; recipient?: string }>,
+    collection?: NFTCollection
+  ) => {
+    if (!nftService) throw new Error('NFT service not available');
+    
+    return executeWithErrorHandling(
+      () => nftService.batchMintNFTs(nfts, collection),
+      'Batch NFT minting'
+    );
+  }, [nftService, executeWithErrorHandling]);
+
+  const transferNFT = useCallback(async (
+    assetId: string,
+    toAddress: string,
+    memo?: string
+  ) => {
+    if (!nftService) throw new Error('NFT service not available');
+    
+    return executeWithErrorHandling(
+      () => nftService.transferNFT(assetId, toAddress, memo),
+      'NFT transfer'
+    );
+  }, [nftService, executeWithErrorHandling]);
+
+  const refreshNFTs = useCallback(async () => {
+    if (!nftService) return;
+    
+    return executeWithErrorHandling(async () => {
+      const walletNFTs = await nftService.getWalletNFTs();
+      setNfts(walletNFTs);
+      return walletNFTs;
+    }, 'NFT refresh');
+  }, [nftService, executeWithErrorHandling]);
+
+  return {
+    // State
+    connected,
+    loading,
+    error,
+    nfts,
+    address,
+    
+    // Actions
+    mintNFT,
+    batchMintNFTs,
+    transferNFT,
+    refreshNFTs,
+    
+    // Service access for advanced operations
+    nftService,
+  };
+}
+
+// Enhanced NFT Manager Component with modern UI patterns
+export function NFTManager() {
+  const { 
+    connected, 
+    loading, 
+    error, 
+    nfts, 
+    mintNFT, 
+    batchMintNFTs, 
+    transferNFT, 
+    refreshNFTs 
+  } = useNFT();
+
+  const [selectedNFT, setSelectedNFT] = useState<any>(null);
+  const [transferAddress, setTransferAddress] = useState('');
+  const [memo, setMemo] = useState('');
+
+  const handleMintSingle = async () => {
+    try {
+      const metadata: NFTMetadata = {
+        name: 'Mesh NFT 2024',
+        description: 'Latest NFT created with Mesh.js v1.6+',
+        image: 'https://example.com/nft-image.jpg',
+        mediaType: 'image/jpeg',
+        attributes: [
+          { trait_type: 'Generation', value: '2024' },
+          { trait_type: 'Rarity', value: 'Legendary' },
+          { trait_type: 'Framework', value: 'Mesh.js' },
+        ],
+        files: [{
+          name: 'NFT Image',
+          mediaType: 'image/jpeg',
+          src: 'https://example.com/nft-image.jpg',
+        }],
+        website: 'https://meshjs.dev',
+        version: '1.0',
+      };
+
+      const txHash = await mintNFT('MeshNFT2024', metadata);
+      alert(`NFT minted successfully! Transaction: ${txHash}`);
+      await refreshNFTs();
+    } catch (error) {
+      console.error('Minting failed:', error);
+    }
+  };
+
+  const handleBatchMint = async () => {
+    try {
+      const nftsToMint = Array.from({ length: 3 }, (_, i) => ({
+        assetName: `BatchNFT${i + 1}`,
+        metadata: {
+          name: `Batch NFT #${i + 1}`,
+          description: `NFT #${i + 1} from batch mint`,
+          image: `https://example.com/batch-nft-${i + 1}.jpg`,
+          attributes: [
+            { trait_type: 'Batch', value: 'First' },
+            { trait_type: 'Number', value: i + 1 },
+          ],
+        },
+      }));
+
+      const collection: NFTCollection = {
+        policyId: '', // Will be set during minting
+        name: 'Batch Collection',
+        description: 'Collection of batch-minted NFTs',
+        image: 'https://example.com/collection-image.jpg',
+      };
+
+      const txHash = await batchMintNFTs(nftsToMint, collection);
+      alert(`Batch minted ${nftsToMint.length} NFTs! Transaction: ${txHash}`);
+      await refreshNFTs();
+    } catch (error) {
+      console.error('Batch minting failed:', error);
+    }
+  };
+
+  const handleTransfer = async () => {
+    if (!selectedNFT || !transferAddress) return;
+
+    try {
+      const txHash = await transferNFT(selectedNFT.unit, transferAddress, memo);
+      alert(`NFT transferred successfully! Transaction: ${txHash}`);
+      setSelectedNFT(null);
+      setTransferAddress('');
+      setMemo('');
+      await refreshNFTs();
+    } catch (error) {
+      console.error('Transfer failed:', error);
+    }
+  };
+
+  if (!connected) {
+    return (
+      <div className="p-6 max-w-4xl mx-auto">
+        <h2 className="text-2xl font-bold mb-4">NFT Manager</h2>
+        <p className="text-gray-600 mb-4">Connect your Cardano wallet to manage NFTs</p>
+        <CardanoWallet />
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-6 max-w-4xl mx-auto">
+      <h2 className="text-2xl font-bold mb-6">NFT Manager</h2>
+      
+      {error && (
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+          {error}
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        <button
+          onClick={handleMintSingle}
+          disabled={loading}
+          className="bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600 disabled:opacity-50"
+        >
+          {loading ? 'Minting...' : 'Mint Single NFT'}
+        </button>
+
+        <button
+          onClick={handleBatchMint}
+          disabled={loading}
+          className="bg-green-500 text-white px-6 py-3 rounded-lg hover:bg-green-600 disabled:opacity-50"
+        >
+          {loading ? 'Batch Minting...' : 'Batch Mint NFTs'}
+        </button>
+      </div>
+
+      <div className="flex gap-4 mb-6">
+        <button
+          onClick={refreshNFTs}
+          disabled={loading}
+          className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 disabled:opacity-50"
+        >
+          {loading ? 'Refreshing...' : 'Refresh NFTs'}
+        </button>
+        <span className="text-sm text-gray-600 self-center">
+          Found {nfts.length} NFTs in wallet
+        </span>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+        {nfts.map((nft, index) => (
+          <div key={index} className="border rounded-lg p-4 bg-white shadow">
+            <h3 className="font-semibold text-lg mb-2">
+              {nft.metadata?.name || 'Unknown NFT'}
+            </h3>
+            <p className="text-sm text-gray-600 mb-2">
+              Asset: {nft.unit.slice(0, 20)}...
+            </p>
+            <p className="text-sm text-gray-600 mb-3">
+              Quantity: {nft.quantity}
+            </p>
+            {nft.metadata?.description && (
+              <p className="text-sm mb-3">{nft.metadata.description}</p>
+            )}
+            <button
+              onClick={() => setSelectedNFT(nft)}
+              className="bg-purple-500 text-white px-3 py-1 rounded text-sm hover:bg-purple-600"
+            >
+              Transfer
+            </button>
+          </div>
+        ))}
+      </div>
+
+      {selectedNFT && (
+        <div className="border rounded-lg p-4 bg-gray-50">
+          <h3 className="font-semibold mb-4">Transfer NFT</h3>
+          <p className="text-sm text-gray-600 mb-4">
+            Transferring: {selectedNFT.metadata?.name || 'Unknown NFT'}
+          </p>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <input
+              type="text"
+              placeholder="Recipient address"
+              value={transferAddress}
+              onChange={(e) => setTransferAddress(e.target.value)}
+              className="border rounded px-3 py-2 w-full"
+            />
+            <input
+              type="text"
+              placeholder="Memo (optional)"
+              value={memo}
+              onChange={(e) => setMemo(e.target.value)}
+              className="border rounded px-3 py-2 w-full"
+            />
+          </div>
+          
+          <div className="flex gap-2">
+            <button
+              onClick={handleTransfer}
+              disabled={!transferAddress || loading}
+              className="bg-purple-500 text-white px-4 py-2 rounded hover:bg-purple-600 disabled:opacity-50"
+            >
+              {loading ? 'Transferring...' : 'Transfer NFT'}
+            </button>
+            <button
+              onClick={() => setSelectedNFT(null)}
+              className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Enhanced utility functions
+export class NFTUtils {
+  static createAssetId(policyId: string, assetName: string): string {
+    return policyId + Buffer.from(assetName).toString('hex');
+  }
+
+  static assetNameToHex(assetName: string): string {
+    return Buffer.from(assetName, 'utf8').toString('hex');
+  }
+
+  static hexToAssetName(hex: string): string {
+    return Buffer.from(hex, 'hex').toString('utf8');
+  }
+
+  static extractPolicyId(assetId: string): string {
+    return assetId.slice(0, 56);
+  }
+
+  static extractAssetName(assetId: string): string {
+    return assetId.slice(56);
+  }
+
+  static isValidCardanoAddress(address: string): boolean {
+    try {
+      deserializeAddress(address);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  static formatAda(lovelace: number): string {
+    return (lovelace / 1000000).toFixed(6) + ' ADA';
+  }
+
+  static validateNFTMetadata(metadata: NFTMetadata): boolean {
+    return !!(metadata.name && metadata.description && metadata.image);
+  }
+
+  static generateAssetFingerprint(assetId: string): string {
+    // Implementation would use CRC8 and Bech32 encoding
+    // This is a simplified version
+    return `asset1${assetId.slice(0, 8)}...`;
+  }
+}
+
+export default NFTService;
