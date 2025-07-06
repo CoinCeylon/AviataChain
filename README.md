@@ -19,16 +19,20 @@
 
 <h2>Key Features</h2>
 <ul>
-  <li>Feature 1</li>
-  <li>Feature 2</li>
-  <li>Feature 3</li>
+  <li>Multi-Airline Integration: Seamlessly earn and redeem points across partner airlines</li>
+<li>Tokenized Loyalty Points: Blockchain-based tokens representing loyalty rewards</li>
+<li>Smart Contract Automation: Automated reward distribution and redemption</li>
+<li>Real-time Tracking: Live balance updates and transaction history</li>
+<li>Cross-Platform Compatibility: Web and mobile-friendly interface</li>
+<li>Secure Wallet Integration: Connect with Cardano wallets for secure transactions</li>
+<li>Partnership Rewards: Bonus points for cross-airline bookings and partnerships </li>
 </ul>
 
 <h2>🛠️ Installation</h2>
 <pre>
 <code>
 # Clone the repository
-git clone https://github.com/yourusername/yourproject.git
+git clone https://github.com/CoinCeylon/AviataChain.git
 
 # Change directory
 cd yourproject
@@ -45,12 +49,8 @@ npm start
 </code>
 </pre>
 <p>
-  Or describe how to use your project here.
+  link to the product demo
 </p>
-
-<h2>📷 Screenshots</h2>
-<img src="screenshot1.png" alt="Screenshot 1" width="400">
-<img src="screenshot2.png" alt="Screenshot 2" width="400">
 
 <h2>🤝 Contributing</h2>
 <p>
@@ -67,23 +67,6 @@ npm start
   <li>Email: <a href="mailto:your.email@example.com">your.email@example.com</a></li>
   <li>GitHub: <a href="https://github.com/yourusername">yourusername</a></li>
 </ul>
-
-
-AviataChain -  Unified Airline Loyalty Platform
-
-
-
-
-
-
-
-•	Multi-Airline Integration: Seamlessly earn and redeem points across partner airlines
-•	Tokenized Loyalty Points: Blockchain-based tokens representing loyalty rewards
-•	Smart Contract Automation: Automated reward distribution and redemption
-•	Real-time Tracking: Live balance updates and transaction history
-•	Cross-Platform Compatibility: Web and mobile-friendly interface
-•	Secure Wallet Integration: Connect with Cardano wallets for secure transactions
-•	Partnership Rewards: Bonus points for cross-airline bookings and partnerships
 
 Architecture
 
