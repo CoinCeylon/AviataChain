@@ -1,12 +1,82 @@
-Unified Airline Loyalty Platform
+<!-- README.html for GitHub project -->
 
-A decentralized airline loyalty platform built on the Cardano blockchain, leveraging Blockfrost API, Mesh SDK, and MeshJS to create a unified, interoperable rewards ecosystem for airlines and travelers.
+<h1 align="center">Project Name</h1>
 
-Overview
+<p align="center">
+  <img src="https://img.shields.io/badge/version-1.0.0-blue.svg" alt="Version">
+  <img src="https://img.shields.io/badge/license-MIT-green.svg" alt="License">
+</p>
 
-The Unified Airline Loyalty Platform revolutionizes traditional airline reward programs by creating a blockchain-based ecosystem where loyalty points are tokenized, transferable, and usable across multiple airline partners. Built on Cardano's sustainable blockchain infrastructure, the platform ensures security, transparency, and true ownership of rewards.
+<p align="center">
+  <b>AviataChain -  Unified Airline Loyalty Platform.</b><br>
+  <i>A decentralized airline loyalty platform built on the Cardano blockchain, leveraging Blockfrost API, Mesh SDK, and MeshJS to create a unified, interoperable rewards ecosystem for airlines and travelers.</i>
+</p>
 
-Key Features
+<hr>
+
+<h2>🚀 Overview</h2>
+ <i>The Unified Airline Loyalty Platform revolutionizes traditional airline reward programs by creating a blockchain-based ecosystem where loyalty points are tokenized, transferable, and usable across multiple airline partners. Built on Cardano's sustainable blockchain infrastructure, the platform ensures security, transparency, and true ownership of rewards.</i>
+
+<h2>Key Features</h2>
+<ul>
+  <li>Feature 1</li>
+  <li>Feature 2</li>
+  <li>Feature 3</li>
+</ul>
+
+<h2>🛠️ Installation</h2>
+<pre>
+<code>
+# Clone the repository
+git clone https://github.com/yourusername/yourproject.git
+
+# Change directory
+cd yourproject
+
+# Install dependencies
+npm install
+</code>
+</pre>
+
+<h2>💡 Usage</h2>
+<pre>
+<code>
+npm start
+</code>
+</pre>
+<p>
+  Or describe how to use your project here.
+</p>
+
+<h2>📷 Screenshots</h2>
+<img src="screenshot1.png" alt="Screenshot 1" width="400">
+<img src="screenshot2.png" alt="Screenshot 2" width="400">
+
+<h2>🤝 Contributing</h2>
+<p>
+  Contributions are welcome! Please read the <a href="CONTRIBUTING.md">contributing guidelines</a>.
+</p>
+
+<h2>📄 License</h2>
+<p>
+  This project is licensed under the <a href="LICENSE">MIT License</a>.
+</p>
+
+<h2>📬 Contact</h2>
+<ul>
+  <li>Email: <a href="mailto:your.email@example.com">your.email@example.com</a></li>
+  <li>GitHub: <a href="https://github.com/yourusername">yourusername</a></li>
+</ul>
+
+
+AviataChain -  Unified Airline Loyalty Platform
+
+
+
+
+
+
+
 •	Multi-Airline Integration: Seamlessly earn and redeem points across partner airlines
 •	Tokenized Loyalty Points: Blockchain-based tokens representing loyalty rewards
 •	Smart Contract Automation: Automated reward distribution and redemption
