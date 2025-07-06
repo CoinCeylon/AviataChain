@@ -1,6 +1,6 @@
 <!-- README.html for GitHub project -->
 
-<h1 align="center">Project Name</h1>
+<h1 align="center">AviataChain -  Unified Airline Loyalty Platform</h1>
 
 <p align="center">
   <img src="https://img.shields.io/badge/version-1.0.0-blue.svg" alt="Version">
@@ -8,7 +8,7 @@
 </p>
 
 <p align="center">
-  <b>AviataChain -  Unified Airline Loyalty Platform.</b><br>
+  <b>Introduction</b><br>
   <i>A decentralized airline loyalty platform built on the Cardano blockchain, leveraging Blockfrost API, Mesh SDK, and MeshJS to create a unified, interoperable rewards ecosystem for airlines and travelers.</i>
 </p>
 
