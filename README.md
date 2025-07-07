@@ -1,6 +1,6 @@
 <!-- README.html for GitHub project -->
 
-<h1 align="center">AviataChain -  Unified Airline Loyalty Platform</h1>
+<h1 align="center">AviataChain - Unified Airline Loyalty Platform</h1>
 
 <p align="center">
   <img src="https://img.shields.io/badge/version-1.0.0-blue.svg" alt="Version">
@@ -10,8 +10,8 @@
 <p align="center">
   <b>Introduction</b><br>
   <i>A decentralized airline loyalty platform built on the Cardano blockchain, leveraging Blockfrost API, Mesh SDK, and MeshJS to create a unified, interoperable rewards ecosystem for airlines and travelers.</i>
-</p>
-
+  </p>
+  <p align="left"> Please refer our video about the project at <a href="https://youtu.be/1F-MGQkMqLo?si=6FDOQrSBiyk1r3al">YouTube</a>
 <hr>
 
 <h2>🚀 Overview</h2>
@@ -49,24 +49,12 @@ npm start
 </code>
 </pre>
 <p>
-  link to the product demo
-</p>
-
-<h2>🤝 Contributing</h2>
-<p>
-  Contributions are welcome! Please read the <a href="CONTRIBUTING.md">contributing guidelines</a>.
-</p>
+<a href="https://youtu.be/1F-MGQkMqLo?si=6FDOQrSBiyk1r3al">YouTube Demo</a></p>
 
 <h2>📄 License</h2>
 <p>
   This project is licensed under the <a href="LICENSE">MIT License</a>.
 </p>
-
-<h2>📬 Contact</h2>
-<ul>
-  <li>Email: <a href="mailto:your.email@example.com">your.email@example.com</a></li>
-  <li>GitHub: <a href="https://github.com/yourusername">yourusername</a></li>
-</ul>
 
 Architecture
 
@@ -82,67 +70,4 @@ Architecture
 │ User Interface  │    │ Data Provider    │    │ Loyalty Logic   │
 └─────────────────┘    └──────────────────┘    └─────────────────┘
 
-aviatachain-loyalty-framework/
-├── contracts/                    # Plutus smart contracts
-│   ├── src/
-│   │   ├── NFTMarketplace.hs    # Main marketplace contract
-│   │   ├── NFTMinting.hs        # NFT minting contract
-│   │   └── Utils.hs             # Utility functions
-│   ├── plutus.json              # Contract compilation output
-│   └── cabal.project
-├── frontend/                     # React frontend
-│   ├── public/
-│   │   ├── index.html
-│   │   └── manifest.json
-│   ├── src/
-│   │   ├── components/
-│   │   │   ├── NFTCard.js
-│   │   │   ├── MintForm.js
-│   │   │   ├── Marketplace.js
-│   │   │   └── WalletConnect.js
-│   │   ├── services/
-│   │   │   ├── cardano.js       # Cardano wallet integration
-│   │   │   ├── api.js           # API calls
-│   │   │   └── contracts.js     # Contract interactions
-│   │   ├── utils/
-│   │   │   ├── helpers.js
-│   │   │   └── constants.js
-│   │   ├── App.js
-│   │   └── index.js
-│   ├── package.json
-│   └── .env
-├── backend/                      # Node.js backend
-│   ├── src/
-│   │   ├── controllers/
-│   │   │   ├── nftController.js
-│   │   │   └── userController.js
-│   │   ├── models/
-│   │   │   ├── NFT.js
-│   │   │   └── User.js
-│   │   ├── routes/
-│   │   │   ├── nft.js
-│   │   │   └── users.js
-│   │   ├── services/
-│   │   │   ├── cardanoService.js
-│   │   │   ├── ipfsService.js   # IPFS integration
-│   │   │   └── dbService.js
-│   │   ├── middleware/
-│   │   │   ├── auth.js
-│   │   │   └── validation.js
-│   │   └── app.js
-│   ├── package.json
-│   └── .env
-├── scripts/                      # Deployment and utility scripts
-│   ├── deploy-contracts.js
-│   ├── mint-nft.js
-│   └── setup-testnet.js
-├── tests/                        # Test files
-│   ├── contract-tests/
-│   ├── integration/
-│   └── unit/
-├── docs/                         # Documentation
-│   ├── API.md
-│   └── DEPLOYMENT.md
-├── docker-compose.yml
-├── package.json
-└── README.md
+
